@@ -1,0 +1,35 @@
+services:
+
+  pgdbhost:
+    image: postgres:15.2
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=flaskdb
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - "5432:5432"
+    volumes: 
+      - /var/lib/postgresql/data
+      # copy the sql script to create tables
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  api: 
+    build: .
+    # flask requires SIGINT to stop gracefully
+    # (default stop signal from Compose is SIGTERM)
+    stop_signal: SIGINT
+    restart: always
+    ports:
+      - '5000:5000'
+    depends_on:
+      - pgdbhost
+    environment:
+      - DB_HOST=pgdbhost
+      - DB_DBNAME=flaskdb
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
